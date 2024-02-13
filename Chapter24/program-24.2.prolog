@@ -1,5 +1,8 @@
-test_compiler(X,Y) :-
-    program(X,P), compile(P,Y).
+:- include("program-24.1.prolog").
+
+:- set_prolog_flag(double_quotes, chars).
+
+test_compiler(X,Y) :- program(X,P), compile(P,Y).
 
 program(test1,[program,test1,';',begin,write,x,'+',y,'-',z,'/',2,end]).
 

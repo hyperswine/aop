@@ -3,50 +3,49 @@
   ObjectCode is the result of compilation of a list of tokens
   representing a PL program.
 */
+
 :- op(40,xfx,\).
 :- op(800,fx,#).
 :- op(780,xf,^).
 
+program(test1,[program,test1,';',begin,write,x,'+',y,'-',z,'/',2,end]).
+
+program(test2,[program,test2,';',
+	begin,if,a,'>',b,then,max,':=',a,else,max,':=',b,end]).
+
+parse_and_assemble(Tokens, Res) :- parse(Tokens, Structure), encode(Structure, Dictionary, Code), assemble(Code, Dictionary, Res).
+
+test_1(Res) :- program(T, Tokens), parse_and_assemble(Tokens, Res).
+
 compile(String,ObjectCode) :-
-        string_to_list(String, Codes),
-        phrase(lexer(Tokens), Codes),
-        parse(Tokens,Structure),
-        encode(Structure,Dictionary,Code),
-        assemble(Code,Dictionary,ObjectCode).
+  string_to_list(String, Codes),
+  phrase(lexer(Tokens), Codes),
+  parse(Tokens,Structure),
+  encode(Structure,Dictionary,Code),
+  assemble(Code,Dictionary,ObjectCode).
 
 /*    The parser
-
       parse(Tokens,Structure) :-
       Structure represents the successfully parsed list of Tokens.
 */
-lexer(Ts) -->
-        whitespace, % whitespace is ignored
-        lexer(Ts).
+lexer(Ts) --> whitespace, lexer(Ts).
 
-lexer([T|Ts]) -->
-        lexem(T), lexer(Ts).
+lexer([T|Ts]) --> lexem(T), lexer(Ts).
 
 lexer([]) --> [].
 
-whitespace -->
-        [W],
-        {char_type(W,space)}. % space is whitespace
+whitespace --> [W], {char_type(W,space)}. % space is whitespace
 
-lexem(K) --> % key(K) is a lexem
-        key(K). % if K is a key
-lexem(S) -->    % sep(S) is a lexem
-        sep(S). % if S is a separator
-lexem(S) -->    % sep(S) is a lexem
-        sep(S). % if S is a separator
+% key(K) is a lexem
+% if K is a key
+lexem(K) --> key(K).
+% sep(S) is a lexem
+% if S is a separator
+lexem(S) --> sep(S).
 
-lexem(IA) -->
-        lidentifier(I),
-        !, % longest input match
-        {atom_chars(IA,I)}.
-lexem(NA) -->
-        number(A),
-        !, % longest input match
-        {number_chars(NA,A), integer(NA)}.
+% the middle cut finds the longest input match apparently
+lexem(IA) --> lidentifier(I), !, {atom_chars(IA,I)}.
+lexem(NA) --> number(A), !, {number_chars(NA,A), integer(NA)}.
 
 
 % rules for your keywords here
@@ -60,33 +59,19 @@ key(begin) --> "begin".
 key(while) --> "while".
 key(while) --> "end".
 
-lidentifier([C|Cs]) --> % identifiers are
-        alpha(C),       % alpha letters
-        ident(Cs).      % followed by other cl's
+lidentifier([C|Cs]) --> alpha(C), ident(Cs).
 
-ident([C|Cs]) -->
-        alpha(C),
-        ident(Cs).
-ident([]) -->
-        [].
+ident([C|Cs]) --> alpha(C), ident(Cs).
+ident([]) --> [].
 
-alpha(C) -->
-        [C],             % alphas are
-        {char_type(C,alpha)}. % alpha letters
+alpha(C) --> [C], {char_type(C,alpha)}.
 
-number([D|Ds]) --> % numbers are
-        digit(D),  % a digit followed
-        digits(Ds). % by other digits
+number([D|Ds]) --> digit(D), digits(Ds).
 
-digits([D|Ds]) -->
-        digit(D),
-        digits(Ds).
-digits([]) -->
-        [].
+digits([D|Ds]) --> digit(D), digits(Ds).
+digits([]) --> [].
 
-digit(D) --> % a single digit
-        [D],
-        {char_type(D,digit)}.
+digit(D) --> [D], {char_type(D,digit)}.
 
 % rules for your seperators
 sep(';') --> ";".
@@ -96,9 +81,7 @@ sep('-') --> "-".
 sep('*') --> "*".
 sep('/') --> "/".
 
-parse(Source,Structure) :-
-% pl_program(Z, Source\[],Structure).
-        pl_program(Structure, Source,Z).
+parse(Source,Structure) :- pl_program(Structure, Source,Z).
 
 pl_program(S) --> [program], identifier(X), [';'], statement(S).
 
@@ -256,5 +239,5 @@ allocate(dict(Name,N1,Before,After),N0,N) :-
 
 print_asm((instr(X,Y);Rest)) :- format("~w ~w~n", [X,Y]), print_asm(Rest).
 print_asm(block(X)).
-        
+
 %  Program 24.1:  A compiler from PL to machine language
